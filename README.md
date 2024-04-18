@@ -1,0 +1,2 @@
+# blastinsight_spendcurve
+blastinsight的第二个模块spendcurve页面
