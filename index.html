@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.3/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        label,
+        input,
+        button {
+            display: inline-block;
+            /* 修改为行内块元素 */
+            margin: 10px;
+            /* 调整元素之间的间距 */
+        }
+
+        /* 调整标签和输入框的样式 */
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        input[type="date"] {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        /* 调整按钮样式 */
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: row;
+            /* 横向排列 */
+        }
+
+        .chart-container canvas {
+            margin-right: 10px;
+            max-width: 400px;
+            max-height: 350px;
+            /* 设置每个 canvas 的最大宽度为三分之一 */
+        }
+
+        table {
+            width: 500px;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        th,
+        td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        #summaryTableContainer {
+            display: none;
+            /* 初始隐藏summary table */
+        }
+    </style>
+    <script src="./unit.js"></script>
+</head>
+
+
+
+<body onload="autoFillDate('month'); getData();">
+    <div class="container">
+        <label for="start">Start Date:</label>
+        <input type="date" id="start">
+
+        <label for="end">End Date:</label>
+        <input type="date" id="end">
+
+        <button onclick="autoFillDate('week')">By Week</button>
+        <button onclick="autoFillDate('month')">By Month</button>
+
+        <button onclick="getData()">Get Data</button>
+        <div id="summaryTableContainer">
+            <h2>Summary Table</h2>
+            <table id="summaryTable">
+                <tr>
+                    <th>Total Successful Transactions</th>
+                    <td id="totalTransactions"></td>
+                </tr>
+                <tr>
+                    <th>Total Successful Transaction Amount (ETH)</th>
+                    <td id="totalTransactionAmount"></td>
+                </tr>
+                <tr>
+                    <th>Total Successful Outgoing Transactions</th>
+                    <td id="totalOutgoingTransactions"></td>
+                </tr>
+                <tr>
+                    <th>Total Successful Outgoing Transaction Amount (ETH)</th>
+                    <td id="totalOutgoingTransactionAmount"></td>
+                </tr>
+                <tr>
+                    <th>Total Successful Incoming Transactions</th>
+                    <td id="totalIncomingTransactions"></td>
+                </tr>
+                <tr>
+                    <th>Total Successful Incoming Transaction Amount (ETH)</th>
+                    <td id="totalIncomingTransactionAmount"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="chart-container">
+            <canvas id="transactionsChart" width="400" height="200"></canvas>
+            <canvas id="outgoingChart" width="400" height="200"></canvas>
+            <canvas id="incomingChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+
+
+</body>
+
+</html>
