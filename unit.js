@@ -63,7 +63,9 @@ function removeTrailingZeros(number) {
 async function getData() {
     const startDate = document.getElementById("start").value;
     const endDate = document.getElementById("end").value;
-    const address = "0x6BC58Daa01464c9A0a81aEa8145a335e46F24E36";
+    // const address = "0x6BC58Daa01464c9A0a81aEa8145a335e46F24E36";
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const address = accounts[0];
 
     // 检查开始时间是否大于结束时间
     if (startDate > endDate) {
