@@ -1,4 +1,4 @@
-const API_KEY1 = 'ZQW9Q75PC212BH4QV9BP4NAWJSK2S4EHNQ';
+const API_KEY1 = 'G1ZRJBYJKMJ5UV9DQ8B41VTUMVXG943VTA';
 
 async function getAllSuccessfulTransactions(startDate, endDate, address) {
     try {
