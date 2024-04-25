@@ -226,10 +226,12 @@ function drawTransactionsChart(transactions, canvasId, chartTitle) {
             }]
         },
         options: {
-            title: {
-                display: true,
-                text: chartTitle,
-                fontSize: 18
+            plugins: {
+                title: {
+                    display: true,
+                    text: chartTitle,
+                    fontSize: 18
+                }
             },
             scales: {
                 xAxes: [{
@@ -304,10 +306,12 @@ function drawAmountAndCountChart(transactions, label, canvasId, backgroundColor,
             }]
         },
         options: {
-            title: {
-                display: true,
-                text: chartTitle, // 使用传递的标题参数作为标题文本
-                fontSize: 18 // 可选：标题字体大小
+            plugins: {
+                title: {
+                    display: true,
+                    text: chartTitle, // 使用传递的标题参数作为标题文本
+                    fontSize: 18 // 可选：标题字体大小
+                }
             },
             scales: {
                 yAxes: [{
