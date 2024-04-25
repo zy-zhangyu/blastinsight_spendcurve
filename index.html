@@ -152,8 +152,8 @@
             <label for="end">End Date:</label>
             <input type="date" id="end">
 
-            <button onclick="autoFillDate('week')">By Week</button>
-            <button onclick="autoFillDate('month')">By Month</button>
+            <button onclick="autoFillDate('week');getData();">By Week</button>
+            <button onclick="autoFillDate('month');getData();">By Month</button>
 
             <button onclick="getData()">Get Data</button>
             <button id="printPDFButton" onclick="downloadPDF()">Download PDF</button>
