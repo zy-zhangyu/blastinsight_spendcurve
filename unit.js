@@ -93,9 +93,9 @@ async function getData() {
         console.error("Error destroying previous charts:", error);
     }
     if (transactions.length > 0) {
-        drawTransactionsChart(transactions, 'transactionsChart', 'Transaction Report');
-        drawOutgoingChart(transactions, address, 'outgoingChart', 'Outgoing Report');
-        drawIncomingChart(transactions, address, 'incomingChart', 'Incoming Report');
+        drawTransactionsChart(transactions, 'transactionsChart', 'Transaction');
+        drawOutgoingChart(transactions, address, 'outgoingChart', 'Outgoing');
+        drawIncomingChart(transactions, address, 'incomingChart', 'Incoming');
 
         // 在此处调用 updateSummaryTable 函数，将 address 和 transactions 传递给它
         updateSummaryTable(address, transactions);
