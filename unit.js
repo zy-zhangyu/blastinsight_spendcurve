@@ -1,40 +1,52 @@
 const API_KEY1 = 'G1ZRJBYJKMJ5UV9DQ8B41VTUMVXG943VTA';
 
 async function getAllSuccessfulTransactions(startDate, endDate, address) {
-    try {
-        const endDateTimestamp = new Date(endDate).getTime() / 1000;
-        const startDateTimestamp = new Date(startDate).getTime() / 1000;
+    const BASE_URL = "https://api.blastscan.io/api";
+    const endDateTimestamp = new Date(endDate).getTime() / 1000;
+    const startDateTimestamp = new Date(startDate).getTime() / 1000;
+    let allTransactions = [];
+    let page = 1;
+    const pageSize = 1000; // 设置每页获取的交易数
 
-        const BASE_URL = "https://api.blastscan.io/api";
+    while (true) {
         const params = {
             module: "account",
             action: "txlist",
             address: address,
             startblock: 0,
             endblock: 'latest',
-            page: 1,
-            offset: 10000,
+            page: page,
+            offset: pageSize,
             sort: 'asc',
             apikey: API_KEY1
         };
 
-        const response = await axios.get(BASE_URL, { params });
+        // const response = await axios.get(BASE_URL, { params });
+        const response = await axios.get(BASE_URL, { params })
+            .catch(error => {
+                console.error("Error fetching transactions:", error);
+                throw error; // 继续将错误抛出以向上层传递
+            });
+
         if (response.data.status === '1') {
             const transactions = response.data.result;
-            const successfulTransactions = transactions.filter(transaction => {
-                const timestamp = parseInt(transaction.timeStamp);
-                return timestamp >= startDateTimestamp && timestamp <= endDateTimestamp && transaction.txreceipt_status === '1';
-            });
-            return successfulTransactions;
+            allTransactions = allTransactions.concat(transactions);
+            if (transactions.length < pageSize) break; // 如果返回的交易数量少于页面大小，说明已经是最后一页
+            page++;
         } else {
             console.error("Error fetching transactions:", response.data.message);
-            return [];
+            break;
         }
-    } catch (error) {
-        console.error("Failed to fetch transactions:", error);
-        return [];
     }
+
+    const successfulTransactions = allTransactions.filter(transaction => {
+        const timestamp = parseInt(transaction.timeStamp);
+        return timestamp >= startDateTimestamp && timestamp <= endDateTimestamp && transaction.txreceipt_status === '1';
+    });
+
+    return successfulTransactions;
 }
+
 
 async function autoFillDate(interval) {
     const startDateInput = document.getElementById("start");
@@ -42,11 +54,13 @@ async function autoFillDate(interval) {
     const today = new Date().toISOString().split('T')[0];
 
     if (interval === 'week') {
+        console.log("操作week")
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
         const oneWeekAgoString = oneWeekAgo.toISOString().split('T')[0];
         startDateInput.value = oneWeekAgoString;
     } else if (interval === 'month') {
+        console.log("操作month")
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         const oneMonthAgoString = oneMonthAgo.toISOString().split('T')[0];
@@ -60,31 +74,56 @@ function removeTrailingZeros(number) {
     // 转换为字符串，并去除尾部的零和小数点
     return parseFloat(number).toString();
 }
-async function getData() {
-    const startDate = document.getElementById("start").value;
-    const endDate = document.getElementById("end").value;
-    // const address = "0x6BC58Daa01464c9A0a81aEa8145a335e46F24E36";
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const address = accounts[0];
+let isFetchingData = false; // 标志变量，表示是否正在获取数据
 
-    // 检查开始时间是否大于结束时间
-    if (startDate > endDate) {
-        alert("The start time cannot be greater than the end time!");
-        try {
-            destroyChart('transactionsChart');
-            destroyChart('outgoingChart');
-            destroyChart('incomingChart');
-        } catch (error) {
-            console.error("Error destroying previous charts:", error);
-        }
-        document.getElementById("summaryTableContainer").style.display = "none";
-        // 禁用打印 PDF 按钮
-        disablePrintPDFButton();
+async function getData() {
+    if (isFetchingData) {
+        console.log("正在获取数据，请稍候...");
         return;
     }
 
-    const transactions = await getAllSuccessfulTransactions(startDate, endDate, address);
+    isFetchingData = true; // 设置标志变量为 true，表示开始获取数据
 
+    try {
+        console.log("开始执行getdata...");
+        const startDate = document.getElementById("start").value;
+        const endDate = document.getElementById("end").value;
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const address = accounts[0];
+
+        if (startDate > endDate) {
+            console.log("开始时间大于截止时间");
+            alert("The start time cannot be greater than the end time!");
+            destroyAllCharts();
+            document.getElementById("summaryTableContainer").style.display = "none";
+            disablePrintPDFButton();
+            return;
+        }
+
+        const transactions = await getAllSuccessfulTransactions(startDate, endDate, address);
+
+        destroyAllCharts();
+
+        if (transactions.length > 0) {
+            drawTransactionsChart(transactions, 'transactionsChart', 'Transaction');
+            drawOutgoingChart(transactions, address, 'outgoingChart', 'Outgoing');
+            drawIncomingChart(transactions, address, 'incomingChart', 'Incoming');
+            updateSummaryTable(address, transactions);
+            document.getElementById("summaryTableContainer").style.display = "block";
+            enablePrintPDFButton();
+        } else {
+            alert("No transactions during this period!");
+            document.getElementById("summaryTableContainer").style.display = "none";
+            disablePrintPDFButton();
+        }
+    } catch (error) {
+        console.error("Error fetching data:", error);
+    } finally {
+        isFetchingData = false; // 不管获取数据成功或失败，都将标志变量重置为 false
+    }
+}
+
+function destroyAllCharts() {
     try {
         destroyChart('transactionsChart');
         destroyChart('outgoingChart');
@@ -92,23 +131,8 @@ async function getData() {
     } catch (error) {
         console.error("Error destroying previous charts:", error);
     }
-    if (transactions.length > 0) {
-        drawTransactionsChart(transactions, 'transactionsChart', 'Transaction');
-        drawOutgoingChart(transactions, address, 'outgoingChart', 'Outgoing');
-        drawIncomingChart(transactions, address, 'incomingChart', 'Incoming');
-
-        // 在此处调用 updateSummaryTable 函数，将 address 和 transactions 传递给它
-        updateSummaryTable(address, transactions);
-        document.getElementById("summaryTableContainer").style.display = "block";
-        // 启用打印 PDF 按钮
-        enablePrintPDFButton();
-    } else {
-        alert("No transactions during this period!");
-        document.getElementById("summaryTableContainer").style.display = "none";
-        // 禁用打印 PDF 按钮
-        disablePrintPDFButton();
-    }
 }
+
 
 function enablePrintPDFButton() {
     document.getElementById("printPDFButton").disabled = false;
@@ -209,20 +233,22 @@ function drawTransactionsChart(transactions, canvasId, chartTitle) {
 
     const chart = new Chart(ctx, {
         type: 'line',
+        color: '#fff',
         data: {
             labels: dateLabels,
             datasets: [{
                 label: 'Transaction Count',
                 data: transactionCounts,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
             }, {
                 label: 'Transaction Amount (ETH)',
                 data: transactionAmounts,
-                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                backgroundColor: 'rgba(255, 159, 64, 0.5)',
                 borderColor: 'rgba(255, 159, 64, 1)',
-                borderWidth: 1
+                borderWidth: 1,
+                color: '#fff'
             }]
         },
         options: {
@@ -230,12 +256,14 @@ function drawTransactionsChart(transactions, canvasId, chartTitle) {
                 title: {
                     display: true,
                     text: chartTitle,
-                    fontSize: 18
+                    fontSize: 18,
+                    color: '#fff'
                 }
             },
             scales: {
                 xAxes: [{
                     ticks: {
+                        color: '#fff',
                         maxTicksLimit: 7,
                         callback: function (value, index, values) {
                             return value.split('T')[0];
@@ -244,6 +272,7 @@ function drawTransactionsChart(transactions, canvasId, chartTitle) {
                 }],
                 yAxes: [{
                     ticks: {
+                        color: '#fff',
                         beginAtZero: true
                     }
                 }]
@@ -310,12 +339,14 @@ function drawAmountAndCountChart(transactions, label, canvasId, backgroundColor,
                 title: {
                     display: true,
                     text: chartTitle, // 使用传递的标题参数作为标题文本
-                    fontSize: 18 // 可选：标题字体大小
+                    fontSize: 18,// 可选：标题字体大小
+                    color: '#fff'
                 }
             },
             scales: {
                 yAxes: [{
                     ticks: {
+                        color: '#fff',
                         beginAtZero: true
                     }
                 }]
@@ -430,6 +461,37 @@ function generatePDFURL() {
     });
 }
 
+let debounceTimer;
+function debounce(func, delay) {
+    console.log("操作频繁了哈")
+    return function (...args) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+// let isFetchingData = false; // 标志变量，表示是否正在获取数据
+
+// const getdatabutton = document.getElementById("getDataButton");
+// getdatabutton.addEventListener("click", async function () {
+//     if (isFetchingData) {
+//         console.log("正在获取数据，请稍候...");
+//         return;
+//     }
+
+//     isFetchingData = true; // 设置标志变量为 true，表示开始获取数据
+
+//     try {
+//         await getData();
+//     } catch (error) {
+//         console.error("Error fetching data:", error);
+//     } finally {
+//         isFetchingData = false; // 不管获取数据成功或失败，都将标志变量重置为 false
+//     }
+// });
+
+
+// document.getElementById("getDataButton").addEventListener("click", debounce(getData, 300));
 
 function updateSummaryTable(address, transactions) {
     const totalTransactions = transactions.length;
